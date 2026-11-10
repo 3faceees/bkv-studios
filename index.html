@@ -40,12 +40,8 @@ footer a{color:var(--doux)}
   var FORM = "rDBxN2";
   var leadEnvoye = false;
 
-  // Le formulaire Tally, avec les paramètres utm de la pub
+  // Le formulaire Tally. Le script de Tally lui transmet tout seul les paramètres utm de la pub.
   var src = "https://tally.so/embed/" + FORM + "?alignLeft=1&hideTitle=0&transparentBackground=1&dynamicHeight=1";
-  var q = new URLSearchParams(location.search);
-  ["utm_source", "utm_medium", "utm_campaign", "utm_content"].forEach(function (k) {
-    if (q.get(k)) src += "&" + k + "=" + encodeURIComponent(q.get(k));
-  });
   var iframe = document.getElementById('tally');
   iframe.setAttribute('data-tally-src', src);
   var s = document.createElement('script');
