@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Audit gratuit de ton studio · BKV</title>
+<style>
+:root{--fond:#f6f6f4;--carte:#fff;--texte:#1d1d1f;--doux:#6e6e73;--bord:#e4e4e0;--accent:#1d1d1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.5 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+header{max-width:680px;margin:0 auto;padding:22px 16px 0;font-weight:700;letter-spacing:.08em;font-size:14px}
+main{max-width:680px;margin:12px auto 0;padding:0 16px}
+.carte{background:var(--carte);border:1px solid var(--bord);border-radius:14px;padding:8px 18px 4px}
+iframe{display:block;width:100%;border:0;min-height:900px}
+footer{max-width:680px;margin:0 auto;padding:18px 16px 110px;color:var(--doux);font-size:13px}
+footer a,footer button{color:var(--doux);font:inherit;background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+#cookies{position:fixed;left:0;right:0;bottom:0;background:#1d1d1f;color:#fff;padding:14px 16px;display:none;z-index:10}
+#cookies .in{max-width:680px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#cookies p{margin:0;flex:1 1 260px;font-size:14px}
+#cookies a{color:#fff}
+#cookies button{border:0;border-radius:8px;padding:9px 16px;font:600 14px/1 inherit;cursor:pointer}
+#ok{background:#fff;color:#1d1d1f}
+#non{background:transparent;color:#fff;border:1px solid #fff !important}
+</style>
+</head>
+<body>
+<header>BKV</header>
+<main>
+  <div class="carte">
+    <iframe id="tally" title="Audit gratuit de ton studio" loading="eager"></iframe>
+  </div>
+</main>
+<footer>
+  BKV · Benjamin Kauffmann · <a href="confidentialite.html">Confidentialité</a> · <button type="button" id="gerer">Cookies</button>
+</footer>
+
+<div id="cookies" role="dialog" aria-label="Cookies">
+  <div class="in">
+    <p>J'utilise le pixel Meta pour mesurer mes publicités. Tu acceptes ? <a href="confidentialite.html">En savoir plus</a></p>
+    <button type="button" id="ok">J'accepte</button>
+    <button type="button" id="non">Non merci</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var PIXEL = "2744369536018405";
+  var FORM = "rDBxN2";
+  var CLE = "bkv_cookies";
+  var leadEnAttente = false, leadEnvoye = false;
+
+  function lire() { try { return localStorage.getItem(CLE); } catch (e) { return null; } }
+  function ecrire(v) { try { localStorage.setItem(CLE, v); } catch (e) {} }
+
+  function chargerPixel() {
+    if (window.fbq) return;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', PIXEL);
+    fbq('track', 'PageView');
+    if (leadEnAttente) envoyerLead();
+  }
+
+  function envoyerLead() {
+    if (leadEnvoye) return;
+    if (window.fbq) { fbq('track', 'Lead'); leadEnvoye = true; leadEnAttente = false; }
+    else { leadEnAttente = true; }
+  }
+
+  var bandeau = document.getElementById('cookies');
+  function montrer() { bandeau.style.display = 'block'; }
+  function cacher() { bandeau.style.display = 'none'; }
+  document.getElementById('ok').onclick = function () { ecrire('oui'); cacher(); chargerPixel(); };
+  document.getElementById('non').onclick = function () { ecrire('non'); cacher(); leadEnAttente = false; };
+  document.getElementById('gerer').onclick = montrer;
+
+  var choix = lire();
+  if (choix === 'oui') chargerPixel();
+  else if (choix !== 'non') montrer();
+
+  // Le formulaire Tally, avec les paramètres utm de la pub
+  var src = "https://tally.so/embed/" + FORM + "?alignLeft=1&hideTitle=0&transparentBackground=1&dynamicHeight=1";
+  var q = new URLSearchParams(location.search);
+  ["utm_source", "utm_medium", "utm_campaign", "utm_content"].forEach(function (k) {
+    if (q.get(k)) src += "&" + k + "=" + encodeURIComponent(q.get(k));
+  });
+  var iframe = document.getElementById('tally');
+  iframe.setAttribute('data-tally-src', src);
+  var s = document.createElement('script');
+  s.src = "https://tally.so/widgets/embed.js";
+  s.onload = function () { if (window.Tally) Tally.loadEmbeds(); else iframe.src = src; };
+  s.onerror = function () { iframe.src = src; };
+  document.body.appendChild(s);
+
+  // Tally prévient la page quand le formulaire est envoyé : c'est le Lead
+  window.addEventListener('message', function (e) {
+    var hote = '';
+    try { hote = new URL(e.origin).hostname; } catch (err) { return; }
+    if (hote !== 'tally.so' && !/\.tally\.so$/.test(hote)) return;
+    var d = e.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (err) { if (d.indexOf('Tally.FormSubmitted') === -1) return; d = { event: 'Tally.FormSubmitted' }; } }
+    if (d && d.event === 'Tally.FormSubmitted') {
+      if (lire() === 'non') return;
+      envoyerLead();
+    }
+  });
+})();
+</script>
+</body>
+</html>
