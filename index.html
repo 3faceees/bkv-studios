@@ -50,6 +50,36 @@ footer a{color:var(--doux)}
   s.onerror = function () { iframe.src = src; };
   document.body.appendChild(s);
 
+  // Les studios à l'heure vont directement sur la page de vente de la formation.
+  // Les autres restent sur la fin du formulaire (« je t'appelle en moins de 24 h »).
+  var VENTE = "https://prod-bkv.systeme.io/4f0f35a3";
+  var Q_TYPE = "b56f39a1-4021-4761-93a4-2545b481e2c4";   // « Ton studio est : »
+  var OPT_HEURE = "c426fb68-0730-4fce-a28b-36354df66bee"; // « À l'heure »
+
+  function estALHeure(payload) {
+    try {
+      var champs = (payload && payload.fields) || [];
+      for (var i = 0; i < champs.length; i++) {
+        var c = champs[i];
+        if (c.id === Q_TYPE || /ton studio est/i.test(c.title || '')) {
+          var reponse = JSON.stringify(c.answer || '');
+          return reponse.indexOf(OPT_HEURE) !== -1 || /heure/i.test(reponse);
+        }
+      }
+    } catch (err) {}
+    return false;
+  }
+
+  function versLaFormation() {
+    var carte = document.querySelector('.carte');
+    if (carte) {
+      carte.innerHTML = '<p style="padding:18px 0;margin:0">C’est noté. Je t’ouvre la formation…<br>' +
+        '<a href="' + VENTE + '">Si rien ne s’ouvre, clique ici.</a></p>';
+    }
+    // Laisse le temps au pixel Meta d'envoyer le Lead avant de changer de page
+    setTimeout(function () { window.location.href = VENTE; }, 900);
+  }
+
   // Tally prévient la page quand le formulaire est envoyé : c'est le Lead
   window.addEventListener('message', function (e) {
     var hote = '';
@@ -63,6 +93,7 @@ footer a{color:var(--doux)}
     if (d && d.event === 'Tally.FormSubmitted' && !leadEnvoye) {
       leadEnvoye = true;
       fbq('track', 'Lead');
+      if (estALHeure(d.payload)) versLaFormation();
     }
   });
 })();
